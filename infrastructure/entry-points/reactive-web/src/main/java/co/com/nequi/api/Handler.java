@@ -17,7 +17,7 @@ public class Handler {
     public Mono<ServerResponse> createUser(ServerRequest serverRequest) {
         Long id = Long.valueOf(serverRequest.pathVariable("id"));
         return useCase.createUser(id)
-                .flatMap(user -> ServerResponse.status(HttpStatus.CREATED).bodyValue(user))
+                .flatMap(user -> ServerResponse.ok().bodyValue(user))
                 .onErrorResume(error -> ServerResponse.badRequest().bodyValue(error.getMessage()));
     }
 
