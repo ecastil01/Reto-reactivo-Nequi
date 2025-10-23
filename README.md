@@ -89,7 +89,7 @@ GET /api/v1/users
 
 ### Buscar Usuarios por Nombre
 ```
-GET /api/v1/users/search?name={nombre}
+GET /api/v1/users/name?name={nombre}
 ```
 
 ## Flujo de la Aplicación
