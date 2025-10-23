@@ -1,47 +1,107 @@
-# Proyecto Base Implementando Clean Architecture
+# Reto Onboarding Reactivo
 
-## Antes de Iniciar
+Aplicación reactiva para gestión de usuarios con integración a APIs externas, cache Redis y base de datos NoSQL.
 
-Empezaremos por explicar los diferentes componentes del proyectos y partiremos de los componentes externos, continuando con los componentes core de negocio (dominio) y por último el inicio y configuración de la aplicación.
+## Requisitos Previos
 
-Lee el artículo [Clean Architecture — Aislando los detalles](https://medium.com/bancolombia-tech/clean-architecture-aislando-los-detalles-4f9530f35d7a)
+- Java 17+
+- Docker/Podman
+- PostgreSQL
+- Redis
+- LocalStack (AWS SQS y DynamoDB)
 
-# Arquitectura
+## Configuración
 
-![Clean Architecture](https://miro.medium.com/max/1400/1*ZdlHz8B0-qu9Y-QO3AXR_w.png)
+### 1. Base de Datos PostgreSQL
+```sql
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY,
+    email VARCHAR(255),
+    first_name VARCHAR(255),
+    last_name VARCHAR(255),
+    avatar VARCHAR(500)
+);
+```
 
-## Domain
+### 2. Redis
+```bash
+podman run -d --name redis -p 6379:6379 redis:alpine
+```
 
-Es el módulo más interno de la arquitectura, pertenece a la capa del dominio y encapsula la lógica y reglas del negocio mediante modelos y entidades del dominio.
+### 3. LocalStack (SQS y DynamoDB)
+```bash
+podman run -d --name localstack -p 4566:4566 localstack/localstack
+```
 
-## Usecases
+#### Crear cola SQS:
+```bash
+aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name user-events
+```
 
-Este módulo gradle perteneciente a la capa del dominio, implementa los casos de uso del sistema, define lógica de aplicación y reacciona a las invocaciones desde el módulo de entry points, orquestando los flujos hacia el módulo de entities.
+#### Crear tabla DynamoDB:
+```bash
+aws --endpoint-url=http://localhost:4566 dynamodb create-table \
+  --table-name users_uppercase \
+  --attribute-definitions AttributeName=id,AttributeType=N \
+  --key-schema AttributeName=id,KeyType=HASH \
+  --billing-mode PAY_PER_REQUEST
+```
 
-## Infrastructure
+## Variables de Entorno
 
-### Helpers
+```properties
+# PostgreSQL
+spring.r2dbc.url=r2dbc:postgresql://localhost:5432/nequi_db
+spring.r2dbc.username=postgres
+spring.r2dbc.password=password
 
-En el apartado de helpers tendremos utilidades generales para los Driven Adapters y Entry Points.
+# Redis
+spring.redis.host=localhost
+spring.redis.port=6379
 
-Estas utilidades no están arraigadas a objetos concretos, se realiza el uso de generics para modelar comportamientos
-genéricos de los diferentes objetos de persistencia que puedan existir, este tipo de implementaciones se realizan
-basadas en el patrón de diseño [Unit of Work y Repository](https://medium.com/@krzychukosobudzki/repository-design-pattern-bc490b256006)
+# AWS LocalStack
+cloud.aws.sqs.queue-url=http://localhost:4566/000000000000/user-events
+cloud.aws.region.static=us-east-1
+cloud.aws.credentials.access-key=test
+cloud.aws.credentials.secret-key=test
+cloud.aws.sqs.endpoint=http://localhost:4566
+cloud.aws.dynamodb.endpoint=http://localhost:4566
+```
 
-Estas clases no puede existir solas y debe heredarse su compartimiento en los **Driven Adapters**
+## Endpoints
 
-### Driven Adapters
+### Crear Usuario
+```
+POST /api/v1/user/{id}
+```
+Obtiene usuario de https://reqres.in/api/users/{id} y lo guarda en PostgreSQL.
 
-Los driven adapter representan implementaciones externas a nuestro sistema, como lo son conexiones a servicios rest,
-soap, bases de datos, lectura de archivos planos, y en concreto cualquier origen y fuente de datos con la que debamos
-interactuar.
+### Consultar Usuario por ID
+```
+GET /api/v1/user/{id}
+```
+Busca primero en cache Redis, luego en PostgreSQL.
 
-### Entry Points
+### Consultar Todos los Usuarios
+```
+GET /api/v1/users
+```
 
-Los entry points representan los puntos de entrada de la aplicación o el inicio de los flujos de negocio.
+### Buscar Usuarios por Nombre
+```
+GET /api/v1/users/search?name={nombre}
+```
 
-## Application
+## Flujo de la Aplicación
 
-Este módulo es el más externo de la arquitectura, es el encargado de ensamblar los distintos módulos, resolver las dependencias y crear los beans de los casos de use (UseCases) de forma automática, inyectando en éstos instancias concretas de las dependencias declaradas. Además inicia la aplicación (es el único módulo del proyecto donde encontraremos la función “public static void main(String[] args)”.
+1. **Crear Usuario**: API externa → PostgreSQL → Cache Redis → Evento SQS
+2. **Consultar Usuario**: Cache Redis → PostgreSQL (si no está en cache)
+3. **Procesamiento Asíncrono**: SQS → Transformar a mayúsculas → DynamoDB
 
-**Los beans de los casos de uso se disponibilizan automaticamente gracias a un '@ComponentScan' ubicado en esta capa.**
+## Ejecución
+
+```bash
+./gradlew bootRun
+```
+
+La aplicación estará disponible en `http://localhost:8080`
