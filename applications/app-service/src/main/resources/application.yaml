@@ -56,3 +56,17 @@ resilience4j:
         slidingWindowSize: 10
         minimumNumberOfCalls: 10
         waitDurationInOpenState: "10s"
+
+cloud:
+  aws:
+    region:
+      static: us-east-1
+    credentials:
+      access-key: dummy
+      secret-key: dummy
+    sqs:
+      endpoint: http://localhost:4566
+      queue-url: http://localhost:4566/000000000000/user-created
+    dynamodb:
+      endpoint: http://localhost:4566
+

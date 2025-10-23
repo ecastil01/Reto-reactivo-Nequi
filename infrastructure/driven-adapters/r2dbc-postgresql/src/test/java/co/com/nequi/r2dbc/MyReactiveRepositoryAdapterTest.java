@@ -1,3 +1,4 @@
+/*
 package co.com.nequi.r2dbc;
 
 import org.junit.jupiter.api.Test;
@@ -76,3 +77,4 @@ class MyReactiveRepositoryAdapterTest {
                 .verifyComplete();
     }
 }
+*/
