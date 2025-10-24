@@ -24,8 +24,7 @@ public class Handler {
     public Mono<ServerResponse> getUserById(ServerRequest serverRequest) {
         Long id = Long.valueOf(serverRequest.pathVariable("id"));
         return useCase.getUserById(id)
-                .flatMap(user -> ServerResponse.ok().bodyValue(user))
-                .onErrorResume(error -> ServerResponse.status(HttpStatus.NOT_FOUND).bodyValue(error.getMessage()));
+                .flatMap(user -> ServerResponse.ok().bodyValue(user));
     }
 
     public Mono<ServerResponse> getAllUsers(ServerRequest serverRequest) {

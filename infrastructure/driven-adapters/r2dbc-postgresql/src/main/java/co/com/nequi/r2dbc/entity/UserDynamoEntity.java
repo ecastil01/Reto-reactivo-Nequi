@@ -1,4 +1,4 @@
-package co.com.nequi.r2dbc.DynamoDb;
+package co.com.nequi.r2dbc.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

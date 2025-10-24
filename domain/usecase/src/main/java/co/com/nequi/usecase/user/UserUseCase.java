@@ -1,11 +1,13 @@
 package co.com.nequi.usecase.user;
 
+
+import co.com.nequi.model.enums.TechnicalMessage;
+import co.com.nequi.model.exception.BusinessException;
 import co.com.nequi.model.user.User;
 import co.com.nequi.model.user.consumer.UserConsumerGateway;
 import co.com.nequi.model.user.gateways.UserCacheRepository;
 import co.com.nequi.model.user.gateways.UserEventPublisher;
 import co.com.nequi.model.user.gateways.UserRepository;
-import co.com.nequi.usecase.user.exception.NotFound;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -31,8 +33,10 @@ public class UserUseCase {
         return userCacheRepository.findById(cacheKey)
                 .switchIfEmpty(userRepository.getUserById(id)
                         .flatMap(user -> userCacheRepository.save(cacheKey, user))
-                        .switchIfEmpty(Mono.error(new NotFound("User not found"))));
+                        .switchIfEmpty(Mono.defer(() -> Mono.error(new BusinessException(TechnicalMessage.USER_NOT_FOUND))))
+                );
     }
+
 
     public Flux<User> getAllUsers() {
         return userRepository.getAllUsers();

@@ -15,6 +15,8 @@ import software.amazon.awssdk.services.sqs.SqsAsyncClient;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 
+import static net.logstash.logback.argument.StructuredArguments.kv;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -56,7 +58,12 @@ public class SqsEventListener {
                         .lastName(user.getLastName().toUpperCase())
                         .avatar(user.getAvatar())
                         .build())
-                .doOnNext(upperCaseUser -> log.info("Mensaje recibido y transformado: {}", upperCaseUser))
+                .doOnNext(upperCaseUser -> log.info("Mensaje recibido y transformado",
+                        kv("id", upperCaseUser.getId()),
+                        kv("email", upperCaseUser.getEmail()),
+                        kv("name", upperCaseUser.getFirstName()),
+                        kv("lastName", upperCaseUser.getLastName()),
+                        kv("avatar", upperCaseUser.getAvatar())))
                 .flatMap(userNoSqlRepository::save)
                 .then(Mono.fromFuture(() ->
                         sqsClient.deleteMessage(b -> b
@@ -64,7 +71,7 @@ public class SqsEventListener {
                                 .receiptHandle(message.receiptHandle()))))
                 .then()
                 .onErrorResume(e -> {
-                    log.error("Error procesando mensaje", e);
+                    log.error("Error procesando mensaje: {}", e.getMessage());
                     return Mono.empty();
                 });
     }

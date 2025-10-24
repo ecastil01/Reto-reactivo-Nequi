@@ -9,6 +9,7 @@ dependencies {
     implementation 'software.amazon.awssdk:sqs:2.25.20'
     implementation 'software.amazon.awssdk:dynamodb:2.25.20'
     implementation 'software.amazon.awssdk:dynamodb-enhanced:2.25.20'
+    implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
 
 
     testImplementation 'com.squareup.okhttp3:okhttp:5.1.0'

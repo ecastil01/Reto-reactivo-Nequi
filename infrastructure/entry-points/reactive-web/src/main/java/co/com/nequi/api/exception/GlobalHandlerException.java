@@ -1,6 +1,8 @@
 package co.com.nequi.api.exception;
 
-import co.com.nequi.usecase.user.exception.NotFound;
+import co.com.nequi.model.exception.BusinessException;
+import co.com.nequi.model.exception.PocketException;
+import co.com.nequi.model.exception.TechnicalException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -18,9 +20,22 @@ public class GlobalHandlerException {
                 .body("{\"error\":\"User not found in external API\"}");
     }
 
-    @ExceptionHandler(NotFound.class)
-    public ResponseEntity<String> handleNotFoundException(NotFound ex) {
-        return ResponseEntity.notFound().build();
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<String> handleBusinessException(BusinessException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body("{\"error\":\"" + ex.getTechnicalMessage().getMessage() + "\"}");
+    }
+
+    @ExceptionHandler(TechnicalException.class)
+    public ResponseEntity<String> handleTechnicalException(TechnicalException ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("{\"error\":\"" + ex.getTechnicalMessage().getMessage() + "\"}");
+    }
+
+    @ExceptionHandler(PocketException.class)
+    public ResponseEntity<String> handlePocketException(PocketException ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("{\"error\":\"" + ex.getTechnicalMessage().getMessage() + "\"}");
     }
 
     @ExceptionHandler(NumberFormatException.class)

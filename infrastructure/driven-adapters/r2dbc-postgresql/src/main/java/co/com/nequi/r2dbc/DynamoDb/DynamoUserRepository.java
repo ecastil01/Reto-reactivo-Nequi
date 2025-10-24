@@ -2,6 +2,7 @@ package co.com.nequi.r2dbc.DynamoDb;
 
 import co.com.nequi.model.user.User;
 import co.com.nequi.model.user.gateways.UserNoSqlRepository;
+import co.com.nequi.r2dbc.entity.UserDynamoEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;

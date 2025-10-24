@@ -11,6 +11,8 @@ import reactor.core.publisher.Mono;
 import software.amazon.awssdk.services.sqs.SqsAsyncClient;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 
+import static net.logstash.logback.argument.StructuredArguments.kv;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -32,7 +34,11 @@ public class SqsUserEventPublisher implements UserEventPublisher {
                     .build();
 
             return Mono.fromFuture(sqsClient.sendMessage(request))
-                    .doOnSuccess(resp -> log.info("Evento enviado a SQS: " + user))
+                    .doOnSuccess(resp -> log.info("Evento enviado a SQS",
+                            kv("id", user.getId()),
+                            kv("name", user.getFirstName()),
+                            kv("email", user.getEmail()),
+                            kv("avatar", user.getAvatar())))
                     .then();
         } catch (Exception e) {
             return Mono.error(e);

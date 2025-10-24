@@ -1,6 +1,8 @@
 package co.com.nequi.consumer;
 
-import co.com.nequi.consumer.exception.ErrorFetching;
+import co.com.nequi.model.enums.TechnicalMessage;
+import co.com.nequi.model.exception.BusinessException;
+import co.com.nequi.model.exception.TechnicalException;
 import co.com.nequi.model.user.User;
 import co.com.nequi.model.user.consumer.UserConsumerGateway;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
@@ -23,25 +25,23 @@ public class RestConsumer implements UserConsumerGateway {
                 .get()
                 .uri("/{id}", id)
                 .retrieve()
+                .onStatus(status -> status.value() == 404, response ->
+                        Mono.error(new BusinessException(TechnicalMessage.USER_NOT_FOUND))
+                )
                 .onStatus(HttpStatusCode::is4xxClientError, response ->
                         response.bodyToMono(String.class)
-                                .defaultIfEmpty("No error body")
-                                .flatMap(body -> Mono.error(new ErrorFetching(
-                                        String.format("Client error (%d) while fetching user %d: %s",
-                                                response.statusCode().value(),
-                                                id,
-                                                body)
-                                )))
+                                .defaultIfEmpty("Client error")
+                                .flatMap(body -> Mono.error(new TechnicalException(
+                                        String.format("Client error (%d): %s", response.statusCode().value(), body),
+                                        TechnicalMessage.USER_NOT_FOUND)))
                 )
                 .onStatus(HttpStatusCode::is5xxServerError, response ->
                         response.bodyToMono(String.class)
                                 .defaultIfEmpty("No error body")
-                                .flatMap(body -> Mono.error(new ErrorFetching(
+                                .flatMap(body -> Mono.error(new TechnicalException(
                                         String.format("Server error (%d) while fetching user %d: %s",
-                                                response.statusCode().value(),
-                                                id,
-                                                body)
-                                )))
+                                                response.statusCode().value(), id, body),
+                                        TechnicalMessage.USER_NOT_FOUND)))
                 )
                 .bodyToMono(UserConsumerResponse.class)
                 .map(response -> {
